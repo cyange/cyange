@@ -24,3 +24,5 @@ http://127.0.0.1:8766/
 ## Cloudflare Pages
 
 部署到 Cloudflare Pages 时，构建输出目录填写 `static`。线上版本在浏览器中解析 Excel，不依赖 Python 后端。
+
+Excel 解析库 `static/xlsx.full.min.js` 已随项目一起部署，不依赖外部 CDN。
