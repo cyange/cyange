@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>库存流水对比工具</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <h1>库存流水对比工具</h1>
+          <p>本机解析 SAP EXPORT 与逻辑仓库存变动记录，按五组业务规则输出数量差异和缺失单号。</p>
+        </div>
+        <button class="primary" id="compareButton" disabled>开始对比</button>
+      </header>
+
+      <section class="upload-grid">
+        <article class="upload-panel" data-side="sap">
+          <div class="panel-heading">
+            <div>
+              <h2>SAP 流水</h2>
+              <p>例如 EXPORT.XLSX</p>
+            </div>
+            <span class="status-pill" id="sapStatus">未上传</span>
+          </div>
+          <label class="dropzone" for="sapFile">
+            <input id="sapFile" type="file" accept=".xlsx,.xlsm,.xltx,.xltm" />
+            <span>拖入或选择 Excel</span>
+          </label>
+          <div class="file-meta" id="sapMeta"></div>
+          <div class="mapping" id="sapMapping"></div>
+        </article>
+
+        <article class="upload-panel" data-side="logic">
+          <div class="panel-heading">
+            <div>
+              <h2>逻辑仓变动</h2>
+              <p>例如 逻辑仓库存变动记录</p>
+            </div>
+            <span class="status-pill" id="logicStatus">未上传</span>
+          </div>
+          <label class="dropzone" for="logicFile">
+            <input id="logicFile" type="file" accept=".xlsx,.xlsm,.xltx,.xltm" />
+            <span>拖入或选择 Excel</span>
+          </label>
+          <div class="file-meta" id="logicMeta"></div>
+          <div class="mapping" id="logicMapping"></div>
+        </article>
+      </section>
+
+      <section class="results" id="results" hidden>
+        <div class="metrics" id="metrics"></div>
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-table="group1">分组一</button>
+          <button class="tab" data-table="group2">分组二</button>
+          <button class="tab" data-table="group3">分组三</button>
+          <button class="tab" data-table="group4">分组四</button>
+          <button class="tab" data-table="group5">分组五</button>
+        </div>
+        <div class="table-toolbar">
+          <h2 id="tableTitle">分组一</h2>
+          <div class="export-actions">
+            <button class="secondary" id="downloadButton">保存当前表 CSV</button>
+            <span id="exportStatus" class="export-status"></span>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="resultTable"></table>
+        </div>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
