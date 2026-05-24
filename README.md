@@ -20,3 +20,7 @@ http://127.0.0.1:8766/
 - 上传文件会临时保存到 `uploads/`，不会提交到 Git。
 - 导出的 CSV 会保存到 `exports/`，不会提交到 Git。
 - 工具只在本机运行，Excel 数据不会上传到外部服务。
+
+## Cloudflare Pages
+
+部署到 Cloudflare Pages 时，构建输出目录填写 `static`。线上版本在浏览器中解析 Excel，不依赖 Python 后端。

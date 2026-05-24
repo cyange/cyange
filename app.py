@@ -623,6 +623,9 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path.startswith("/static/"):
             self.serve_static(parsed.path.removeprefix("/static/"))
             return
+        if parsed.path in ("/app.js", "/styles.css"):
+            self.serve_static(parsed.path.removeprefix("/"))
+            return
         if parsed.path == "/api/export":
             query = parse_qs(parsed.query)
             self.handle_export(query.get("table", ["group1"])[0])

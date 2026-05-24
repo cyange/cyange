@@ -4,14 +4,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>库存流水对比工具</title>
-    <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <main class="app-shell">
       <header class="topbar">
         <div>
           <h1>库存流水对比工具</h1>
-          <p>本机解析 SAP EXPORT 与逻辑仓库存变动记录，按五组业务规则输出数量差异和缺失单号。</p>
+          <p>浏览器本地解析 SAP EXPORT 与逻辑仓库存变动记录，按五组业务规则输出数量差异和缺失单号。</p>
         </div>
         <button class="primary" id="compareButton" disabled>开始对比</button>
       </header>
@@ -62,7 +62,7 @@
         <div class="table-toolbar">
           <h2 id="tableTitle">分组一</h2>
           <div class="export-actions">
-            <button class="secondary" id="downloadButton">保存当前表 CSV</button>
+            <button class="secondary" id="downloadButton">下载当前表 CSV</button>
             <span id="exportStatus" class="export-status"></span>
           </div>
         </div>
@@ -71,6 +71,7 @@
         </div>
       </section>
     </main>
-    <script src="/static/app.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script src="app.js"></script>
   </body>
 </html>
