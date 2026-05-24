@@ -74,13 +74,20 @@ function formatDateTime(value) {
 }
 
 function parseDay(value) {
-  if (value instanceof Date) return formatDateTime(value).slice(0, 10);
   const text = normalizeText(value);
   if (!text) return "";
-  const match = text.match(/\d{4}[-/]\d{1,2}[-/]\d{1,2}/);
-  if (!match) return text.slice(0, 10);
-  const parts = match[0].replaceAll("/", "-").split("-");
-  return `${parts[0]}-${pad2(parts[1])}-${pad2(parts[2])}`;
+  const yearFirst = text.match(/\d{4}[-/]\d{1,2}[-/]\d{1,2}/);
+  if (yearFirst) {
+    const parts = yearFirst[0].replaceAll("/", "-").split("-");
+    return `${parts[0]}-${pad2(parts[1])}-${pad2(parts[2])}`;
+  }
+  const monthFirst = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})(?:\b|\s)/);
+  if (monthFirst) {
+    const yearNumber = Number(monthFirst[3]);
+    const fullYear = yearNumber < 100 ? 2000 + yearNumber : yearNumber;
+    return `${fullYear}-${pad2(monthFirst[1])}-${pad2(monthFirst[2])}`;
+  }
+  return text.slice(0, 10);
 }
 
 function containsAny(value, keywords) {
@@ -152,10 +159,10 @@ function guessMapping(headers, side) {
 }
 
 function parseWorkbook(buffer, side, name) {
-  const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
+  const workbook = XLSX.read(buffer, { type: "array", cellDates: false });
   const sheetName = workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetName];
-  const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: "" });
+  const matrix = sheetToMatrix(sheet);
   const headerIndex = detectHeader(matrix);
   const headers = makeUniqueHeaders(matrix[headerIndex] || []);
   const rows = [];
@@ -182,6 +189,27 @@ function parseWorkbook(buffer, side, name) {
     },
     mapping_guess: guessMapping(headers, side),
   };
+}
+
+function cellDisplayValue(cell) {
+  if (!cell) return "";
+  if (cell.w !== undefined) return cell.w;
+  if (cell.v === undefined || cell.v === null) return "";
+  return cell.v;
+}
+
+function sheetToMatrix(sheet) {
+  if (!sheet["!ref"]) return [];
+  const range = XLSX.utils.decode_range(sheet["!ref"]);
+  const matrix = [];
+  for (let r = range.s.r; r <= range.e.r; r += 1) {
+    const row = [];
+    for (let c = range.s.c; c <= range.e.c; c += 1) {
+      row.push(cellDisplayValue(sheet[XLSX.utils.encode_cell({ r, c })]));
+    }
+    matrix.push(row);
+  }
+  return matrix;
 }
 
 function value(row, fields, field) {
