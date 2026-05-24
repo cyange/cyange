@@ -108,11 +108,11 @@ function normalizeDoc(value) {
   return normalizeText(value).toUpperCase();
 }
 
-function detectHeader(rows) {
+function detectHeader(rows, maxColumn = 0) {
   let bestIndex = 0;
   let bestScore = -1;
   rows.slice(0, 12).forEach((row, index) => {
-    const values = row.map(normalizeText);
+    const values = rowCells(row, maxColumn || row.length).map(normalizeText);
     const nonEmpty = values.filter(Boolean).length;
     const unique = new Set(values.filter(Boolean)).size;
     let score = nonEmpty + unique;
@@ -162,14 +162,15 @@ function parseWorkbook(buffer, side, name) {
   const workbook = XLSX.read(buffer, { type: "array", cellDates: false });
   const sheetName = workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetName];
-  const matrix = sheetToMatrix(sheet);
-  const headerIndex = detectHeader(matrix);
-  const headers = makeUniqueHeaders(matrix[headerIndex] || []);
+  const { matrix, rowNumbers, maxRow, maxColumn } = sheetToMatrix(sheet);
+  if (!matrix.length) throw new Error("工作表没有可读取内容");
+  const headerIndex = detectHeader(matrix, maxColumn);
+  const headers = makeUniqueHeaders(rowCells(matrix[headerIndex], maxColumn));
   const rows = [];
   for (let i = headerIndex + 1; i < matrix.length; i += 1) {
-    const row = matrix[i];
+    const row = rowCells(matrix[i], headers.length);
     if (!row.some((cell) => normalizeText(cell))) continue;
-    const record = { _row_number: i + 1 };
+    const record = { _row_number: rowNumbers[i] || i + 1 };
     headers.forEach((header, index) => {
       const cell = row[index];
       record[header] = cell instanceof Date ? formatDateTime(cell) : cell ?? "";
@@ -183,9 +184,9 @@ function parseWorkbook(buffer, side, name) {
     workbook: {
       sheet: sheetName,
       headers,
-      header_row: headerIndex + 1,
-      max_row: matrix.length,
-      max_column: headers.length,
+      header_row: rowNumbers[headerIndex] || headerIndex + 1,
+      max_row: maxRow,
+      max_column: maxColumn || headers.length,
     },
     mapping_guess: guessMapping(headers, side),
   };
@@ -198,18 +199,41 @@ function cellDisplayValue(cell) {
   return cell.v;
 }
 
+function rowCells(row, length = row?.length || 0) {
+  return Array.from({ length }, (_, index) => row?.[index] ?? "");
+}
+
 function sheetToMatrix(sheet) {
-  if (!sheet["!ref"]) return [];
-  const range = XLSX.utils.decode_range(sheet["!ref"]);
-  const matrix = [];
-  for (let r = range.s.r; r <= range.e.r; r += 1) {
-    const row = [];
-    for (let c = range.s.c; c <= range.e.c; c += 1) {
-      row.push(cellDisplayValue(sheet[XLSX.utils.encode_cell({ r, c })]));
-    }
-    matrix.push(row);
+  const rows = new Map();
+  let maxRow = 0;
+  let maxColumn = 0;
+
+  Object.keys(sheet).forEach((address) => {
+    if (address.startsWith("!")) return;
+    const displayValue = cellDisplayValue(sheet[address]);
+    if (!normalizeText(displayValue)) return;
+
+    const position = XLSX.utils.decode_cell(address);
+    const row = rows.get(position.r) || [];
+    row[position.c] = displayValue;
+    rows.set(position.r, row);
+    maxRow = Math.max(maxRow, position.r + 1);
+    maxColumn = Math.max(maxColumn, position.c + 1);
+  });
+
+  if (!rows.size && sheet["!ref"]) {
+    const range = XLSX.utils.decode_range(sheet["!ref"]);
+    maxRow = range.e.r + 1;
+    maxColumn = range.e.c + 1;
   }
-  return matrix;
+
+  const rowIndexes = [...rows.keys()].sort((a, b) => a - b);
+  return {
+    matrix: rowIndexes.map((rowIndex) => rows.get(rowIndex)),
+    rowNumbers: rowIndexes.map((rowIndex) => rowIndex + 1),
+    maxRow,
+    maxColumn,
+  };
 }
 
 function value(row, fields, field) {

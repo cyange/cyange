@@ -34,13 +34,23 @@ const tableTitles = {
   group5: "分组五：采购退货缺失单号",
 };
 
+function formatFileSize(bytes) {
+  if (!Number.isFinite(bytes)) return "";
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
 function $(selector) {
   return document.querySelector(selector);
 }
 
 function ensureWorker() {
   if (state.worker) return state.worker;
-  state.worker = new Worker("worker.js");
+  try {
+    state.worker = new Worker("worker.js");
+  } catch (error) {
+    throw new Error(`后台解析线程启动失败：${error.message || error}`);
+  }
   state.worker.onmessage = (event) => {
     const { id, status, payload, error, message } = event.data;
     const task = state.pending.get(id);
@@ -128,17 +138,20 @@ function renderMapping(side, upload) {
 
 async function uploadFile(side, file) {
   setStatus(side, "读取中");
-  $(`#${side}Meta`).textContent = `${file.name} · 正在读取文件...`;
+  $(`#${side}Meta`).textContent = `${file.name} · ${formatFileSize(file.size)} · 正在读取文件...`;
   refreshCompareButton();
+  const slowTimer = window.setTimeout(() => {
+    $(`#${side}Meta`).textContent = `${file.name} · ${formatFileSize(file.size)} · 文件较大，仍在解析...`;
+  }, 5000);
   try {
     const buffer = await file.arrayBuffer();
-    $(`#${side}Meta`).textContent = `${file.name} · 正在后台解析，请稍等...`;
+    $(`#${side}Meta`).textContent = `${file.name} · ${formatFileSize(file.size)} · 正在后台解析，请稍等...`;
     const payload = await workerTask(
       "parse",
       { side, name: file.name, buffer },
       [buffer],
       (message) => {
-        $(`#${side}Meta`).textContent = `${file.name} · ${message}`;
+        $(`#${side}Meta`).textContent = `${file.name} · ${formatFileSize(file.size)} · ${message}`;
       }
     );
     state[side] = payload;
@@ -153,6 +166,8 @@ async function uploadFile(side, file) {
     setStatus(side, "读取失败", "error");
     $(`#${side}Meta`).textContent = error.message || "读取失败";
     refreshCompareButton();
+  } finally {
+    window.clearTimeout(slowTimer);
   }
 }
 
@@ -269,6 +284,9 @@ function downloadCurrent() {
 function bindUpload(side) {
   const input = $(`#${side}File`);
   const zone = input.closest(".dropzone");
+  input.addEventListener("click", () => {
+    input.value = "";
+  });
   input.addEventListener("change", () => {
     const file = input.files?.[0];
     if (file) uploadFile(side, file);
@@ -288,6 +306,7 @@ function bindUpload(side) {
   zone.addEventListener("drop", (event) => {
     const file = event.dataTransfer?.files?.[0];
     if (file) uploadFile(side, file);
+    input.value = "";
   });
 }
 
