@@ -35,6 +35,7 @@ const group1LogicTypes = [
   "平台退供",
   "shein",
   "拼多多TEMU",
+  "京东退货单",
 ];
 const group1ExportDocKeys = ["BMS", "ARST", "RO", "RC"];
 const group3LogicTypes = ["样衣调出", "样衣领用", "样衣归还"];

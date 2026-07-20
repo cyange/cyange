@@ -61,6 +61,7 @@ GROUP1_LOGIC_TYPES = [
     "平台退供",
     "shein",
     "拼多多TEMU",
+    "京东退货单",
 ]
 GROUP1_EXPORT_DOC_KEYS = ["BMS", "ARST", "RO", "RC"]
 GROUP2_LOGIC_TYPES = ["其他出入库单", "库存调整单"]
